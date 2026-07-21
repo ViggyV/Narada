@@ -67,6 +67,20 @@ def _shortlist_markup(html: str) -> str:
     return head + '<section class="shortlist">' + tail + "</section>"
 
 
+def _open_offsite(html: str) -> str:
+    """Send outbound links to a new tab.
+
+    Every link in a briefing points off-site, and readers work down the list —
+    losing the page on each click is the wrong default. `noopener` also keeps
+    the opened page from reaching back through `window.opener`.
+    """
+    return re.sub(
+        r'<a href="(https?://[^"]*)"',
+        r'<a href="\1" target="_blank" rel="noopener noreferrer"',
+        html,
+    )
+
+
 def render_post(md_path: Path) -> tuple[str, str, datetime]:
     raw = md_path.read_text(encoding="utf-8")
     date = datetime.strptime(md_path.stem, "%Y-%m-%d")
@@ -74,6 +88,7 @@ def render_post(md_path: Path) -> tuple[str, str, datetime]:
     raw = re.sub(r"^# .*\n", "", raw, count=1)
     body_html = markdown.markdown(raw, extensions=["extra"])
     body_html = _shortlist_markup(body_html)
+    body_html = _open_offsite(body_html)
     hero = (
         '<p class="eyebrow">Briefing &middot; No. {n}</p>'
         '<h1 class="date-hero">{pretty}</h1>'
