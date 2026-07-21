@@ -5,6 +5,21 @@
   --peacock: #24736E;
   --muted: #6C7387;
   --line: #D9DEE9;
+  --card: #FFFFFF;
+}
+/* Dark values are re-picked rather than inverted: the marigold and peacock
+   are lightened so they still carry against a dark ground, and the navy
+   deepens instead of flipping to pure black. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #161A28;
+    --ink: #E6E9F2;
+    --marigold: #E8AE4B;
+    --peacock: #5FB5AE;
+    --muted: #98A0B5;
+    --line: #2C3346;
+    --card: #1D2233;
+  }
 }
 * { box-sizing: border-box; }
 body {
@@ -71,7 +86,7 @@ article blockquote {
 .shortlist {
   margin-top: 2.6rem;
   padding: 0.4rem 1.4rem 1.1rem;
-  background: #FFFFFF;
+  background: var(--card);
   border-left: 4px solid var(--marigold);
   border-radius: 0 6px 6px 0;
 }

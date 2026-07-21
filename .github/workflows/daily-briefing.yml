@@ -13,6 +13,14 @@ permissions:
   pages: write
   id-token: write
 
+# Both cron entries fire daily and a manual dispatch can land on top of them.
+# Two jobs reaching `git push` together means one loses its work, so runs are
+# serialised. Never cancel in flight: a half-finished run may already have
+# committed the briefing without deploying it.
+concurrency:
+  group: daily-briefing
+  cancel-in-progress: false
+
 jobs:
   briefing:
     runs-on: ubuntu-latest

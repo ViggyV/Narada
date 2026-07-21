@@ -17,7 +17,12 @@ log = logging.getLogger(__name__)
 
 TRACK_ORDER = tuple(FEEDS)
 
-MODEL = "claude-sonnet-4-6"
+MODEL = "claude-sonnet-5"
+
+# Sonnet 5 runs adaptive thinking by default, and max_tokens caps thinking plus
+# visible output together. The old 2000 was sized for a non-thinking model and
+# would now risk truncating the briefing mid-list.
+MAX_TOKENS = 8000
 
 PROMPT = """You are producing a daily engineering briefing. Below are today's items \
 across three tracks: AI news, coding best practices, and software factories \
@@ -213,7 +218,7 @@ def synthesize(items: list[Item]) -> str:
     try:
         message = client.messages.create(
             model=MODEL,
-            max_tokens=2000,
+            max_tokens=MAX_TOKENS,
             messages=[{"role": "user", "content": PROMPT.format(items=_items_block(items))}],
         )
     except Exception as exc:
@@ -221,8 +226,11 @@ def synthesize(items: list[Item]) -> str:
         log.warning("synthesis failed (%s: %s) — ranking locally", type(exc).__name__, exc)
         return _fallback_digest(items)
 
+    if message.stop_reason == "max_tokens":
+        # The briefing is cut off mid-list; still publishable, but say so.
+        log.warning("synthesis hit the %d-token cap — briefing is truncated", MAX_TOKENS)
     log.info(
-        "synthesis ok — %d in / %d out tokens",
-        message.usage.input_tokens, message.usage.output_tokens,
+        "synthesis ok — %d in / %d out tokens (stop: %s)",
+        message.usage.input_tokens, message.usage.output_tokens, message.stop_reason,
     )
     return "".join(block.text for block in message.content if block.type == "text")
