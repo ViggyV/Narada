@@ -6,11 +6,14 @@ no API call, no key, so the scheduled run still produces something useful.
 """
 from __future__ import annotations
 
+import logging
 import os
 import re
 from datetime import datetime, timezone
 
 from fetch_sources import FEEDS, LOOKBACK_HOURS, Item
+
+log = logging.getLogger(__name__)
 
 TRACK_ORDER = tuple(FEEDS)
 
@@ -155,6 +158,9 @@ def _fallback_digest(items: list[Item]) -> str:
     ]
 
     clusters = _cluster(items)
+    collapsed = len(items) - len(clusters)
+    if collapsed:
+        log.info("deduped %d items -> %d stories (%d repeats)", len(items), len(clusters), collapsed)
     # One line per story, not per repost — feeds duplicate themselves freely.
     leads = [
         max(c, key=lambda i: SOURCE_WEIGHT.get(i.source, DEFAULT_WEIGHT))
@@ -183,14 +189,26 @@ def _fallback_digest(items: list[Item]) -> str:
 def synthesize(items: list[Item]) -> str:
     api_key = os.environ.get("ANTHROPIC_API_KEY")
     if not api_key:
+        log.info("no ANTHROPIC_API_KEY — ranking locally")
         return _fallback_digest(items)
 
     import anthropic
 
+    log.info("synthesizing %d items with %s", len(items), MODEL)
     client = anthropic.Anthropic(api_key=api_key)
-    message = client.messages.create(
-        model=MODEL,
-        max_tokens=2000,
-        messages=[{"role": "user", "content": PROMPT.format(items=_items_block(items))}],
+    try:
+        message = client.messages.create(
+            model=MODEL,
+            max_tokens=2000,
+            messages=[{"role": "user", "content": PROMPT.format(items=_items_block(items))}],
+        )
+    except Exception as exc:
+        # A briefing ranked locally beats no briefing at all.
+        log.warning("synthesis failed (%s: %s) — ranking locally", type(exc).__name__, exc)
+        return _fallback_digest(items)
+
+    log.info(
+        "synthesis ok — %d in / %d out tokens",
+        message.usage.input_tokens, message.usage.output_tokens,
     )
     return "".join(block.text for block in message.content if block.type == "text")

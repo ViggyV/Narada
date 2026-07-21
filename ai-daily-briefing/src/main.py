@@ -9,6 +9,7 @@ Set FORCE_RUN=1 to bypass the guard (e.g., manual runs).
 """
 from __future__ import annotations
 
+import logging
 import os
 import sys
 from datetime import datetime
@@ -20,23 +21,34 @@ from synthesize import synthesize
 
 TZ = ZoneInfo("America/Chicago")
 
+log = logging.getLogger("narada")
+
+
+def _setup_logging() -> None:
+    """Timestamped logs; LOG_LEVEL=DEBUG for per-feed detail."""
+    logging.basicConfig(
+        level=os.environ.get("LOG_LEVEL", "INFO").upper(),
+        format="%(asctime)s %(levelname)-7s %(name)s: %(message)s",
+        datefmt="%H:%M:%S",
+        stream=sys.stdout,
+    )
+
 
 def main() -> int:
+    _setup_logging()
     now_local = datetime.now(TZ)
 
     if os.environ.get("FORCE_RUN") != "1" and now_local.hour != 6:
-        print(f"Local time is {now_local:%H:%M %Z}, not the 6 AM window. Skipping.")
+        log.info("local time is %s, not the 6 AM window — skipping", f"{now_local:%H:%M %Z}")
         return 0
 
-    print("Fetching sources...")
     items = fetch_all()
-    print(f"Fetched {len(items)} items.")
-
     if not items:
-        print("No items found; skipping briefing.")
-        return 0
+        # Every feed failed or everything was stale; leave yesterday's briefing
+        # in place rather than overwriting it with an empty one.
+        log.error("no items fetched — not writing a briefing")
+        return 1
 
-    print("Synthesizing briefing...")
     body = synthesize(items)
 
     out_dir = Path(__file__).resolve().parent.parent / "briefings"
@@ -44,7 +56,7 @@ def main() -> int:
     out_path = out_dir / f"{now_local:%Y-%m-%d}.md"
     header = f"# Daily Briefing — {now_local:%A, %B %d, %Y}\n\n"
     out_path.write_text(header + body + "\n", encoding="utf-8")
-    print(f"Wrote {out_path}")
+    log.info("wrote %s (%d bytes)", out_path.name, out_path.stat().st_size)
     return 0
 
 

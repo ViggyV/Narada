@@ -11,6 +11,10 @@ share no code and can be worked on separately.
 | [`loop-engineering/`](loop-engineering/) | Nine-chapter written guide on loop engineering, plus `build.py` which renders the markdown in `content/` into the static HTML site. |
 | [`files/`](files/) | Standalone reference material: the software-factory blog post and playbook archive. |
 
+Scope, non-goals, and roadmap live in
+[`ai-daily-briefing/PRD.md`](ai-daily-briefing/PRD.md); the reasoning behind
+past changes is in [`DEVLOG.md`](DEVLOG.md).
+
 ## ai-daily-briefing
 
 Automated by [`.github/workflows/daily-briefing.yml`](.github/workflows/daily-briefing.yml).

@@ -5,11 +5,14 @@
 """
 from __future__ import annotations
 
+import logging
 import time
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 
 import feedparser
+
+log = logging.getLogger(__name__)
 
 # Each track maps to a list of (source_name, feed_url)
 FEEDS: dict[str, list[tuple[str, str]]] = {
@@ -58,19 +61,43 @@ def _parse_time(entry) -> datetime | None:
 
 
 def fetch_all() -> list[Item]:
+    """Fetch every configured feed.
+
+    A dead feed is survivable — the briefing still ships from whatever else
+    responded — but it must not be *silent*, or the digest quietly narrows
+    and nobody notices which source stopped reporting.
+    """
+    started = time.monotonic()
     cutoff = datetime.now(timezone.utc) - timedelta(hours=LOOKBACK_HOURS)
     items: list[Item] = []
+    ok = failed = 0
+
     for track, feeds in FEEDS.items():
         track_items: list[Item] = []
         for source, url in feeds:
             try:
                 parsed = feedparser.parse(url)
-            except Exception:
+            except Exception as exc:  # network, parser, or malformed payload
+                log.warning("feed errored: %s — %s: %s", source, type(exc).__name__, exc)
+                failed += 1
                 continue
+
+            # feedparser reports most failures via `bozo` rather than raising.
+            if getattr(parsed, "bozo", False) and not parsed.entries:
+                log.warning("feed unreadable: %s — %s", source, parsed.get("bozo_exception"))
+                failed += 1
+                continue
+            if not parsed.entries:
+                log.warning("feed empty: %s", source)
+                failed += 1
+                continue
+
+            kept = stale = 0
             for entry in parsed.entries[:20]:
                 published = _parse_time(entry)
                 # Keep undated items (some feeds omit dates) but drop stale ones
                 if published and published < cutoff:
+                    stale += 1
                     continue
                 summary = (entry.get("summary") or "")[:400]
                 track_items.append(
@@ -83,7 +110,23 @@ def fetch_all() -> list[Item]:
                         summary=summary,
                     )
                 )
+                kept += 1
+            ok += 1
+            log.info("%s: %d kept, %d older than %dh", source, kept, stale, LOOKBACK_HOURS)
+
         # Newest first, cap per track
         track_items.sort(key=lambda i: i.published or datetime.min.replace(tzinfo=timezone.utc), reverse=True)
+        if len(track_items) > MAX_ITEMS_PER_TRACK:
+            log.info(
+                "%s: capped %d -> %d items", track, len(track_items), MAX_ITEMS_PER_TRACK
+            )
         items.extend(track_items[:MAX_ITEMS_PER_TRACK])
+
+    total = ok + failed
+    level = logging.WARNING if failed else logging.INFO
+    log.log(
+        level,
+        "fetched %d items from %d/%d feeds in %.1fs (%d failed)",
+        len(items), ok, total, time.monotonic() - started, failed,
+    )
     return items
