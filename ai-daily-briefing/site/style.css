@@ -109,6 +109,9 @@ footer {
   color: var(--muted);
   text-align: center;
 }
+footer a { color: var(--peacock); text-decoration: none; }
+footer a:hover, footer a:focus-visible { text-decoration: underline; }
+.sibling { margin-top: 1.1rem; }
 @media (prefers-reduced-motion: no-preference) {
   article, .archive { animation: rise 0.5s ease-out; }
   @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; } }

@@ -135,7 +135,8 @@ def page(title: str, body: str, desc: str) -> str:
 </head>
 <body>
 {body}
-<footer class="site">LOOP ENGINEERING FIELD MANUAL &middot; SOURCES CURRENT TO JUL 2026 &middot; BUILT FROM /content</footer>
+<footer class="site">LOOP ENGINEERING FIELD MANUAL &middot; SOURCES CURRENT TO JUL 2026 &middot; BUILT FROM /content
+<br><a href="../">&larr; NARADA DAILY BRIEFING</a></footer>
 </body>
 </html>
 """

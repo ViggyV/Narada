@@ -52,6 +52,8 @@ PAGE = """<!doctype html>
 <footer>
   <p>Gathered from AI news, coding practice, and the software-factory frontier.
   Generated each morning by the Narada pipeline.</p>
+  <p class="sibling">Also here: <a href="{root}loop-engineering/">Loop Engineering</a>
+  &mdash; a written guide to building agent loops.</p>
 </footer>
 </body>
 </html>
@@ -74,8 +76,11 @@ def _open_offsite(html: str) -> str:
     losing the page on each click is the wrong default. `noopener` also keeps
     the opened page from reaching back through `window.opener`.
     """
+    # The lookahead keeps this idempotent: an anchor that already carries a
+    # target is skipped, so re-running over built output can't stack duplicate
+    # attributes onto the same tag.
     return re.sub(
-        r'<a href="(https?://[^"]*)"',
+        r'<a href="(https?://[^"]*)"(?![^>]*\btarget=)',
         r'<a href="\1" target="_blank" rel="noopener noreferrer"',
         html,
     )
@@ -257,6 +262,9 @@ footer {
   color: var(--muted);
   text-align: center;
 }
+footer a { color: var(--peacock); text-decoration: none; }
+footer a:hover, footer a:focus-visible { text-decoration: underline; }
+.sibling { margin-top: 1.1rem; }
 @media (prefers-reduced-motion: no-preference) {
   article, .archive { animation: rise 0.5s ease-out; }
   @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; } }

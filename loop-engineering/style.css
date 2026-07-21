@@ -249,6 +249,9 @@ footer.site {
   font-family: "Spline Sans Mono", ui-monospace, monospace;
   font-size: 0.72rem; color: var(--meta); letter-spacing: 0.06em;
 }
+footer.site a { color: var(--loop); text-decoration: none; }
+footer.site a:hover, footer.site a:focus-visible { text-decoration: underline; }
+footer.site br { line-height: 2.4; }
 
 /* ---------- responsive ---------- */
 @media (max-width: 860px) {
