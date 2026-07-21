@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Skills-First Discipline & Harness Design — Loop Engineering</title>
+<meta name="description" content="No loop without a battle-tested skill — and the standing question: what can I stop doing?">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400..700&family=Spline+Sans+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar"><a class="mark" href="index.html"><svg class="loop-glyph" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
+  <g class="rotor"><path d="M12 3a9 9 0 1 0 9 9" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+  <path d="M17.5 1.5 21 3l-1.5 3.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></g>
+</svg><span class="wordmark">Loop Engineering</span></a><span class="crumb">FILE 04 / 09</span><span class="spacer"></span><nav><a href="triggers.html">&larr; prev</a> <a href="verification.html">next &rarr;</a></nav></header><main class="article-wrap"><article>
+<div class="article-head">
+  <div class="file-eyebrow"><span>FILE 04 / 09</span><span class="rule"></span><span class="chips"><span class="chip">WORK</span></span></div>
+  <h1>Skills-First Discipline & Harness Design</h1>
+</div>
+<h2>TL;DR</h2>
+<ul class="tldr">
+<li><strong>No loop without a battle-tested skill behind it.</strong> Osmani: a loop with no reusable skills inside it is a while-true around a stranger.</li>
+<li>Skills are the <em>progressive-disclosure</em> context mechanism Anthropic itself recommends: short YAML frontmatter pre-loaded, full body read only when a task calls for it. This is harness pattern #2 (&ldquo;let Claude assemble its own context&rdquo;) in action.</li>
+<li><strong>New since the base guide:</strong> the Agent Harness Design post (Apr 2, 2026) supplies the theory and benchmarks behind skills-first discipline, and gives loop engineers a standing maintenance question: <em>what can I stop doing?</em></li>
+</ul>
+<h2>Why skills come first</h2>
+<p>Do the task manually with Claude several times. When it works reliably, capture it as <code>.claude/skills/&lt;name&gt;/SKILL.md</code>. Only then is the task a loop candidate. Reasons:</p>
+<ol>
+<li><strong>A skill is a tested procedure; a prompt is a hope.</strong> The loop will run at 2 a.m. without you. Everything implicit in your prompting has to become explicit in the skill.</li>
+<li><strong>Skills are versioned, shared, and reviewable.</strong> Commit <code>.claude/skills/</code> and <code>.claude/agents/</code>; your quality criteria become team assets the checker can also read.</li>
+<li><strong>The description is the trigger.</strong> Vague skill descriptions never fire. Write tight, trigger-oriented descriptions; keep SKILL.md under ~500 lines; push reference material into adjacent files (progressive disclosure).</li>
+<li><strong>Feedback loops multiply quality.</strong> Cherny&rsquo;s documented workflow always gives Claude a way to verify its own work (a bash command, a test suite, browser testing) — improving output quality by his estimate 2–3×. Bake the verification command <em>into</em> the skill.</li>
+</ol>
+<h2>The harness-design connection (Anthropic, Apr 2026)</h2>
+<p>The Agent Harness Design post explains <em>why</em> skills-first works, with numbers:</p>
+<ul>
+<li><strong>Skills &gt; giant system prompts.</strong> Pre-loading every instruction depletes the model&rsquo;s attention budget and wastes tokens on rarely-used context. Skills disclose progressively.</li>
+<li><strong>Code execution &gt; harness orchestration.</strong> Giving Claude a code-execution tool lets it express tool calls <em>and the logic between them</em>, keeping bulky intermediate results out of context. Measured effect: Opus 4.6 filtering its own tool outputs went from 45.3% → 61.6% on BrowseComp. For loops: prefer skills that have Claude write a script over skills that enumerate twenty tool calls.</li>
+<li><strong>Memory &amp; compaction scale with the model.</strong> Sonnet 4.5 stayed flat at 43% on an agentic-search benchmark regardless of compaction budget; Opus 4.5 scaled to 68% and Opus 4.6 to 84% with the same setup. A memory folder lifted Sonnet 4.5 from 60.4% → 67.2% on BrowseComp-Plus. Your loop&rsquo;s memory design (File 06) pays off more with each model generation.</li>
+<li><strong>Prune dead weight.</strong> Anthropic&rsquo;s context-reset scaffolding for Sonnet 4.5&rsquo;s &ldquo;context anxiety&rdquo; became unnecessary by Opus 4.5. Schedule a quarterly review of every loop asking: which parts of this harness exist to compensate for a limitation that&rsquo;s gone?</li>
+</ul>
+<h2>Skill-driven development for loops: the ratios</h2>
+<ul>
+<li>Aim for roughly <strong>one validator skill per ~4 work skills</strong> (your <code>/engineer-review</code>, <code>/fact-checker</code>, <code>/email-review</code> layer). These plug directly into the checker stage (File 05).</li>
+<li>Keep a git-tracked <strong>CLAUDE.md</strong> (~2–3k tokens) for always-true conventions and documented past mistakes — Cherny&rsquo;s team practice.</li>
+<li>Daily workflows live as slash commands in <code>.claude/commands/</code>; loop-grade procedures graduate to <code>.claude/skills/</code>.</li>
+</ul>
+<h2>Choosing the right container (quick reference)</h2>
+<p>Synthesizing Smith Horn Group, McNamara, and AntStack:</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>You need…</th>
+<th>Use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Procedure the same agent should follow</td>
+<td><strong>Skill</strong></td>
+</tr>
+<tr>
+<td>Fresh context / different model / unbiased judgment</td>
+<td><strong>Subagent</strong></td>
+</tr>
+<tr>
+<td>Access to an external system</td>
+<td><strong>MCP connector</strong></td>
+</tr>
+<tr>
+<td>The whole loop as a deployable service</td>
+<td><strong>Agent SDK / Managed Agents</strong></td>
+</tr>
+<tr>
+<td>One-off instruction, this session only</td>
+<td>Just prompt — don&rsquo;t build anything</td>
+</tr>
+</tbody>
+</table></div>
+<h2>Sources</h2>
+<ul>
+<li>Anthropic, &ldquo;Agent Harness Design: 3 Patterns&rdquo; (Apr 2, 2026)</li>
+<li>Anthropic skills guidance; Claude Code docs</li>
+<li>Osmani (Jun 2026); Cherny workflow accounts (2026)</li>
+<li>Smith Horn Group (Dec 2025); McNamara (Oct 2025); AntStack (Mar 2026)</li>
+</ul>
+</article></main><nav class="pager"><a href="triggers.html"><span class="dir">&larr; FILE 03</span><span class="ptitle">Triggers & Schedulers</span></a><a class="next" href="verification.html"><span class="dir">FILE 05 &rarr;</span><span class="ptitle">Verification: Maker vs. Checker</span></a></nav>
+<footer class="site">LOOP ENGINEERING FIELD MANUAL &middot; SOURCES CURRENT TO JUL 2026 &middot; BUILT FROM /content</footer>
+</body>
+</html>

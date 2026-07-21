@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Parallelism, Worktrees & Dynamic Workflows — Loop Engineering</title>
+<meta name="description" content="Isolation lanes, multiagent orchestration, and the 750k-line Bun rewrite.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400..700&family=Spline+Sans+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar"><a class="mark" href="index.html"><svg class="loop-glyph" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
+  <g class="rotor"><path d="M12 3a9 9 0 1 0 9 9" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+  <path d="M17.5 1.5 21 3l-1.5 3.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></g>
+</svg><span class="wordmark">Loop Engineering</span></a><span class="crumb">FILE 07 / 09</span><span class="spacer"></span><nav><a href="memory.html">&larr; prev</a> <a href="safety-cost-security.html">next &rarr;</a></nav></header><main class="article-wrap"><article>
+<div class="article-head">
+  <div class="file-eyebrow"><span>FILE 07 / 09</span><span class="rule"></span><span class="chips"><span class="chip">SCALE</span></span></div>
+  <h1>Parallelism, Worktrees & Dynamic Workflows</h1>
+</div>
+<h2>TL;DR</h2>
+<ul class="tldr">
+<li>Isolation is non-negotiable once more than one agent runs: two agents on one <code>package.json</code> = zero survivors. Use <code>git worktree</code>, <code>--worktree</code>, <code>isolation: worktree</code> on subagents, or <code>/batch</code>.</li>
+<li><strong>New since the base guide:</strong> three parallelism tiers now exist above hand-managed worktrees — <strong>multiagent orchestration</strong> in Managed Agents (lead + specialists on a shared filesystem, fully traceable in the Console), the <strong>redesigned Claude Code desktop app built around parallel agents</strong> (Apr 14, 2026), and <strong>Dynamic Workflows</strong> (May 28, 2026, GA): Claude writes its own orchestration scripts and runs tens to hundreds of parallel subagents with built-in verification.</li>
+<li>The flagship proof point: <strong>Bun ported from Zig to Rust</strong> via dynamic workflows — ~750,000 lines of Rust, eleven days from first commit to merge, 99.8% of the existing test suite passing.</li>
+</ul>
+<h2>Tier 1: Worktrees and subagent isolation (hand-managed)</h2>
+<ul>
+<li><code>claude --worktree &lt;name&gt;</code> or <code>isolation: worktree</code> in subagent frontmatter; <code>/batch</code> for fan-out.</li>
+<li><strong>The classic trap:</strong> worktrees only copy git-tracked files — <code>.env</code>, <code>node_modules</code>, and local config are missing by default. Use <code>.worktreeinclude</code>, a <code>WorktreeCreate</code> hook, or a reinstall step.</li>
+<li>Nuance worth keeping: Cherny himself runs ~5 local + 5–10 web sessions using a <strong>separate <code>git checkout</code> per session</strong>, not worktrees. Both isolation approaches are valid; worktrees are the officially recommended primitive for subagents.</li>
+<li>The desktop redesign (Apr 14, 2026) made parallel sessions a first-class UI concern — a signal that multi-lane operation is now the assumed default, not an expert trick.</li>
+</ul>
+<h2>Tier 2: Multiagent orchestration (Managed Agents, May 2026)</h2>
+<p>When a job is too big for one agent to do well: a <strong>lead agent</strong> breaks it into pieces and delegates each to a <strong>specialist with its own model, prompt, and tools</strong> (e.g., an incident investigation fanning out through deploy history, error logs, metrics, and support tickets).</p>
+<ul>
+<li>Specialists work in parallel on a <strong>shared filesystem</strong> and feed the lead agent&rsquo;s context; events are persistent, so the lead can check back in mid-workflow.</li>
+<li><strong>Full tracing in the Claude Console</strong>: which agent did what, in what order, and why — the observability answer to &ldquo;how do I trust a fan-out I didn&rsquo;t watch?&rdquo;</li>
+<li>Model-mixing is a cost lever: <strong>Spiral</strong> runs a Haiku lead (triage, follow-up questions) delegating drafting to Opus subagents. <strong>Netflix&rsquo;s platform team</strong> batches log analysis across hundreds of builds in parallel and surfaces only recurring patterns.</li>
+</ul>
+<h2>Tier 3: Dynamic Workflows (Claude Code, GA)</h2>
+<p>The largest change to the parallelism landscape since the base guide:</p>
+<ul>
+<li><strong>What it is:</strong> Claude plans from your prompt, writes orchestration scripts, fans work across <strong>tens to hundreds of parallel subagents</strong>, checks results before folding them in, and returns one coordinated answer. Agents attack the problem from independent angles; <strong>adversarial agents try to refute findings</strong>; the run iterates until answers converge.</li>
+<li><strong>Built for long-running work</strong> — hours to days. Progress is saved as it goes; interrupted jobs resume rather than restart. Coordination happens <em>outside</em> the conversation, so the plan holds regardless of task size.</li>
+<li><strong>How to invoke:</strong> turn on auto mode, then either ask for a workflow directly (&ldquo;Create a workflow&rdquo;) or enable the <code>ultracode</code> setting (effort → xhigh; Claude decides when a workflow is warranted). On by default for Max/Team/Enterprise and the API; Pro enables in <code>/config</code>; admins can disable via managed settings. First trigger shows what&rsquo;s about to run and asks you to confirm.</li>
+<li><strong>Sweet-spot use cases:</strong> codebase-wide bug hunts and security audits (parallel search + independent verification of every finding), large migrations/framework swaps/language ports spanning thousands of files, and critical work you need checked twice. Klarna reports it surfacing dead code and cleanup opportunities that static analysis missed.</li>
+<li><strong>Cost warning is explicit:</strong> workflows consume substantially more tokens than a typical session — start on a scoped task.</li>
+</ul>
+<h3>Case study: the Bun rewrite</h3>
+<p>Jarred Sumner&rsquo;s port of Bun from Zig to Rust is the canonical dynamic-workflows loop, and it decomposes exactly into this series&rsquo; architecture:</p>
+<ol>
+<li>One workflow mapped the correct Rust lifetime for every struct field in the Zig codebase (<strong>analysis loop</strong>).</li>
+<li>The next wrote every <code>.rs</code> file as a behavior-identical port of its <code>.zig</code> counterpart — hundreds of agents in parallel, <strong>two reviewers on each file</strong> (maker + checkers).</li>
+<li>A <strong>fix loop</strong> drove the build and test suite until both ran clean (machine-checkable finish line).</li>
+<li>An overnight workflow then addressed unnecessary data copies and <strong>opened a PR for each</strong> for final review (human in the review seat).</li>
+</ol>
+<p>Result: ~750k lines, 11 days, 99.8% test-suite pass — and, notably, <em>not yet in production</em>, which is itself the lesson: even at this scale, the loop proposes and humans decide.</p>
+<h2>Choosing your tier</h2>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Situation</th>
+<th>Tier</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2–5 concurrent lanes you&rsquo;ll watch</td>
+<td>Worktrees / checkouts (Tier 1)</td>
+</tr>
+<tr>
+<td>Deployed, shared, cross-system job with tracing needs</td>
+<td>Multiagent orchestration (Tier 2)</td>
+</tr>
+<tr>
+<td>Huge, verifiable, bounded task (audit, migration, port)</td>
+<td>Dynamic Workflows (Tier 3)</td>
+</tr>
+<tr>
+<td>Token-constrained</td>
+<td>Stay single-agent — multi-agent runs ~15× chat token usage (Anthropic engineering data)</td>
+</tr>
+</tbody>
+</table></div>
+<h2>Sources</h2>
+<ul>
+<li>Anthropic, &ldquo;Introducing dynamic workflows in Claude Code&rdquo; (May 28, 2026)</li>
+<li>Anthropic, &ldquo;New in Claude Managed Agents: dreaming, outcomes, and multiagent orchestration&rdquo; (May 2026)</li>
+<li>Anthropic, &ldquo;Redesigning Claude Code on desktop for parallel agents&rdquo; (Apr 14, 2026)</li>
+<li>Anthropic, &ldquo;How we built our multi-agent research system&rdquo;</li>
+<li>Claude Code docs (worktrees, subagents, <code>/batch</code>)</li>
+</ul>
+</article></main><nav class="pager"><a href="memory.html"><span class="dir">&larr; FILE 06</span><span class="ptitle">Memory & State</span></a><a class="next" href="safety-cost-security.html"><span class="dir">FILE 08 &rarr;</span><span class="ptitle">Safety, Cost & Security</span></a></nav>
+<footer class="site">LOOP ENGINEERING FIELD MANUAL &middot; SOURCES CURRENT TO JUL 2026 &middot; BUILT FROM /content</footer>
+</body>
+</html>

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Implementation Playbook — Loop Engineering</title>
+<meta name="description" content="Go/no-go test, the nine-step build sequence, anti-patterns, graduation benchmarks.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400..700&family=Spline+Sans+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar"><a class="mark" href="index.html"><svg class="loop-glyph" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
+  <g class="rotor"><path d="M12 3a9 9 0 1 0 9 9" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+  <path d="M17.5 1.5 21 3l-1.5 3.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></g>
+</svg><span class="wordmark">Loop Engineering</span></a><span class="crumb">FILE 09 / 09</span><span class="spacer"></span><nav><a href="safety-cost-security.html">&larr; prev</a> <a aria-disabled="true">next &rarr;</a></nav></header><main class="article-wrap"><article>
+<div class="article-head">
+  <div class="file-eyebrow"><span>FILE 09 / 09</span><span class="rule"></span><span class="chips"><span class="chip">BUILD</span></span></div>
+  <h1>The Implementation Playbook</h1>
+</div>
+<h2>TL;DR</h2>
+<ul class="tldr">
+<li>Nine steps, front-loading verification: go/no-go test → prove the skill → build the checker → write the goal → add memory → add isolation → attach the trigger → training mode → graduate autonomy.</li>
+<li><strong>Updated for 2026 platform features:</strong> the ladder now has explicit graduation points into Outcomes, Dreaming, and Dynamic Workflows — each of which you earn, not enable on day one.</li>
+<li>Benchmarks to graduate: 3 consecutive zero-correction supervised runs (weekly), one week of stable unattended operation with no runaway costs and no bad merges (monthly).</li>
+</ul>
+<h2>Step 0 — The four-condition go/no-go test</h2>
+<p>Build a loop only if <strong>all</strong> are true:</p>
+<ol>
+<li><strong>Does the task repeat?</strong> One-off → just prompt.</li>
+<li><strong>Is there a clear definition of done <em>and</em> a way to verify it?</strong> Not machine-checkable → don&rsquo;t loop yet, or break it into checkpoints.</li>
+<li><strong>Can you afford to be wasteful with tokens?</strong> Loops trade tokens for your time (4×/15× multipliers; workflows more).</li>
+<li><strong>Does the loop have every tool it needs to complete <em>and</em> verify the task?</strong></li>
+</ol>
+<p>Good first candidates (boring, bounded, verifiable): failing-test fixes, lint/type cleanup, dependency-audit sweeps, dead-link checks, changelog generation, stale-branch cleanup, CI-failure triage.</p>
+<h2>The build sequence</h2>
+<p><strong>Step 1 — Prove the execution skill(s).</strong> Do it manually with Claude 3–5 times; capture as <code>.claude/skills/&lt;name&gt;/SKILL.md</code> with a tight trigger-oriented description, &lt;~500 lines, verification command baked in. <em>No loop without a battle-tested skill behind it.</em></p>
+<p><strong>Step 2 — Build a separate checker.</strong> Checker subagent in <code>.claude/agents/</code> with different instructions and ideally a different model family. Binary rubric (&ldquo;Does every changed file have a passing test? yes/no&rdquo;). Target ~1 validator per 4 work skills. <em>(2026 upgrade path: when the loop deploys as a Managed Agent, this rubric becomes your </em><em>Outcome</em><em>.)</em></p>
+<p><strong>Step 3 — Write the orchestration skill with a verifiable goal.</strong></p>
+<pre><code>/goal all tests in test/auth pass and lint is clean, or stop after 15 turns
+</code></pre>
+<p>Pair with auto mode. The evaluator only sees the transcript — make the skill <em>surface its proof</em> (print test output, exit codes).</p>
+<p><strong>Step 4 — Give it a memory file.</strong> <code>progress.md</code> read at start, written at end: tried / passed / open. Idempotency guards (&ldquo;if a PR labeled <code>claude-sweep</code> exists this week, exit&rdquo;). CLAUDE.md for conventions; commit everything — Routines clone fresh. <em>(2026 upgrade path: once several loops share learnings, turn on </em><em>Dreaming</em><em> in review mode.)</em></p>
+<p><strong>Step 5 — Add isolation if parallel.</strong> <code>isolation: worktree</code> in subagent frontmatter or <code>claude --worktree &lt;name&gt;</code>. Mind the worktree trap: only git-tracked files come along — handle <code>.env</code>/<code>node_modules</code> via <code>.worktreeinclude</code> or a <code>WorktreeCreate</code> hook.</p>
+<p><strong>Step 6 — Attach the trigger</strong> (least durable that satisfies the job): <code>/loop</code> (in-session) → Desktop scheduled task (local, machine awake) → <code>/schedule</code> Routine (cloud, fresh clone, <code>claude/</code> branches) → GitHub Actions / Managed Agents schedule (infra-native).</p>
+<p><strong>Step 7 — Run in training mode.</strong> First several runs pause at each key step for human approval. This is a discipline (permission prompts/checkpoints), not a named feature. Watch the reasoning and outputs.</p>
+<p><strong>Step 8 — Graduate autonomy deliberately.</strong> Push the slider only as fast as checker + your review can catch failures. For less-quantifiable goals, keep human checkpoints at key decision moments. Build loops to think faster, not to stop thinking.</p>
+<p><strong>Step 9 (new) — Graduate scale deliberately.</strong> Only after a loop is trustworthy at Tier 1 should you consider: Managed Agents deployment (schedules + vaults + Outcomes + webhooks + Console tracing) for org-shaped jobs, or Dynamic Workflows (<code>ultracode</code>, first-run confirmation ON) for audit/migration-scale jobs. Both multiply capability <em>and</em> token burn <em>and</em> blast radius.</p>
+<h2>Cadence &amp; benchmarks</h2>
+<ul>
+<li><strong>This week:</strong> one boring bounded job through Steps 0–4 + 7. <em>Graduate when:</em> correct with zero human corrections across 3 consecutive supervised runs.</li>
+<li><strong>This month:</strong> move to a persistent trigger; turn checkpoints off; add dollar/turn ceiling and idempotency; add worktrees if &gt;1 loop. <em>Expand when:</em> one week of stable unattended operation, no runaway costs, no bad merges.</li>
+<li><strong>This quarter:</strong> library of orchestration skills over validated skills; <code>.claude/skills/</code> + <code>.claude/agents/</code> committed as shared assets; connectors last, least-privilege; consider Managed Agents / Dynamic Workflows per Step 9. <em>Pull back when:</em> review bandwidth can&rsquo;t keep pace (comprehension debt rising) or a loop ships a bug you didn&rsquo;t catch — slide autonomy down, tighten verification, then re-expand.</li>
+<li><strong>Quarterly harness review</strong> (new, per Anthropic&rsquo;s harness-design guidance): for each loop ask <em>&ldquo;what can I stop doing?&rdquo;</em> — delete scaffolding that compensated for model limitations that no longer exist. Keep the boundaries (verification, permissions, audit); prune the rest.</li>
+</ul>
+<h2>The never-do list</h2>
+<ul>
+<li>Never let the maker grade its own work (self-preference bias — NeurIPS 2024).</li>
+<li>Never build a loop on an unproven skill.</li>
+<li>Never write a vague finish line (&ldquo;make it good&rdquo; / &ldquo;production-ready&rdquo;).</li>
+<li>Never run unbounded — no iteration cap + no cost ceiling = runaway burn.</li>
+<li>Never skip the memory file; never keep state in the chat.</li>
+<li>Never run parallel agents in the same working directory.</li>
+<li>Never give an unattended loop broad connector permissions; never use <code>--dangerously-skip-permissions</code> outside a sandbox.</li>
+<li>Never confuse autonomy with abdication — verification is still your job.</li>
+<li>Never over-engineer: add complexity only when it demonstrably improves outcomes. A single well-verified loop beats a fragile multi-agent cathedral — and note that even the 750k-line Bun rewrite still landed as human-reviewed PRs.</li>
+</ul>
+<h2>What would change these recommendations</h2>
+<ul>
+<li><strong>Token-constrained?</strong> Stay single-agent and short; skip Tiers 2–3 parallelism.</li>
+<li><strong>Low-verifiability tasks</strong> (product strategy, novel design)? Loops help less — keep a human in the generation-verify loop; automate only the verifiable sub-parts. Outcomes&rsquo; subjective-rubric support narrows this gap but doesn&rsquo;t close it.</li>
+<li><strong>Version drift.</strong> <code>/goal</code> v2.1.139+, scheduled tasks v2.1.72+, worktree isolation v2.1.33+, dynamic workflows GA since ~June 2026. Verify against code.claude.com/docs before relying on exact flags.</li>
+</ul>
+<h2>Sources</h2>
+<ul>
+<li>Base guide (this series&rsquo; parent document) + Osmani (Jun 2026)</li>
+<li>Anthropic claude.com/blog, Feb–Jul 2026 (Routines, Harness Design, Managed Agents series, Dynamic Workflows, model/effort guide, code migrations)</li>
+<li>Claude Code docs; Anthropic &ldquo;Building Effective Agents&rdquo;</li>
+</ul>
+</article></main><nav class="pager"><a href="safety-cost-security.html"><span class="dir">&larr; FILE 08</span><span class="ptitle">Safety, Cost & Security</span></a></nav>
+<footer class="site">LOOP ENGINEERING FIELD MANUAL &middot; SOURCES CURRENT TO JUL 2026 &middot; BUILT FROM /content</footer>
+</body>
+</html>

@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Loop Engineering — a field manual for self-running agent systems</title>
+<meta name="description" content="A nine-part field manual on loop engineering with Claude Code: triggers, skills, verification, memory, parallelism, and safety.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400..700&family=Spline+Sans+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar"><a class="mark" href="index.html"><svg class="loop-glyph" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
+  <g class="rotor"><path d="M12 3a9 9 0 1 0 9 9" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+  <path d="M17.5 1.5 21 3l-1.5 3.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></g>
+</svg><span class="wordmark">Loop Engineering</span></a><span class="crumb">SERIES INDEX</span><span class="spacer"></span></header>
+<section class="hero"><div class="hero-inner">
+  <div>
+    <span class="eyebrow">A field manual &middot; 9 files &middot; sources verified Jul 2026</span>
+    <h1>Stop prompting.<br>Start <span class="accent">writing loops.</span></h1>
+    <p class="lede">Loop engineering is designing the system that prompts the agent for you —
+    it finds work, hands it out, verifies it, records progress, and decides the next step.
+    <em>This series covers every component with verified Claude Code and Claude Platform primitives.</em></p>
+  </div>
+  <svg class="schematic" width="340" height="330" viewBox="0 0 340 330" role="img"
+  aria-label="Schematic of a loop: trigger, work, verify, remember, cycling, with a human review gate on the output">
+  <circle class="orbit" cx="170" cy="160" r="112"/>
+  <g class="loop-glyph"><g class="rotor">
+    <path class="arrowline" d="M170 34 A126 126 0 0 1 296 160" />
+    <path class="arrowline" d="M296 160 A126 126 0 0 1 170 286" />
+    <path class="arrowline" d="M170 286 A126 126 0 0 1 44 160" />
+    <path class="arrowline" d="M44 160 A126 126 0 0 1 170 34" />
+    <path class="arrowline" d="M288 138 l8 22 l-22 8" fill="none" stroke-linejoin="round"/>
+    <path class="arrowline" d="M52 182 l-8 -22 l22 -8" fill="none" stroke-linejoin="round"/>
+  </g></g>
+  <g>
+    <rect class="stage-node" x="128" y="16" width="84" height="34" rx="3"/>
+    <text class="stage-label" x="170" y="37" text-anchor="middle">TRIGGER</text>
+    <rect class="stage-node" x="256" y="143" width="70" height="34" rx="3"/>
+    <text class="stage-label" x="291" y="164" text-anchor="middle">WORK</text>
+    <rect class="stage-node" x="132" y="269" width="76" height="34" rx="3"/>
+    <text class="stage-label" x="170" y="290" text-anchor="middle">VERIFY</text>
+    <rect class="stage-node" x="8" y="143" width="86" height="34" rx="3"/>
+    <text class="stage-label" x="51" y="164" text-anchor="middle">REMEMBER</text>
+  </g>
+  <g>
+    <path class="human" d="M208 292 h60" stroke-dasharray="4 4"/>
+    <path class="human" d="M262 286 l8 6 l-8 6" fill="none"/>
+    <text class="stage-label human-label" x="278" y="296">HUMAN REVIEW</text>
+  </g>
+</svg>
+</div></section>
+<main class="runlog">
+  <div class="runlog-head"><h2>The series</h2><span class="count mono">RUN ORDER 01&ndash;09</span></div>
+  <a class="entry" href="what-is-loop-engineering.html"><span class="num mono">01</span><span><span class="title">What Is Loop Engineering?</span><span class="sub">The concept, its origin, why it emerged in 2026 — and the corrected attribution.</span></span><span class="chips"><span class="chip">CONCEPT</span></span></a>
+<a class="entry" href="anatomy-of-a-loop.html"><span class="num mono">02</span><span><span class="title">Anatomy of a Loop</span><span class="sub">The unified six-component architecture, seen through Anthropic's agent-harness lens.</span></span><span class="chips"><span class="chip">TRIGGER</span><span class="chip">WORK</span><span class="chip">VERIFY</span><span class="chip">MEMORY</span></span></a>
+<a class="entry" href="triggers.html"><span class="num mono">03</span><span><span class="title">Triggers & Schedulers</span><span class="sub">/loop, Routines, scheduled tasks, GitHub Actions, and Managed Agents schedules.</span></span><span class="chips"><span class="chip">TRIGGER</span></span></a>
+<a class="entry" href="skills-and-harness-design.html"><span class="num mono">04</span><span><span class="title">Skills-First Discipline & Harness Design</span><span class="sub">No loop without a battle-tested skill — and the standing question: what can I stop doing?</span></span><span class="chips"><span class="chip">WORK</span></span></a>
+<a class="entry" href="verification.html"><span class="num mono">05</span><span><span class="title">Verification: Maker vs. Checker</span><span class="sub">/goal, Outcomes graders, self-preference bias, and the five-tier verification ladder.</span></span><span class="chips"><span class="chip">VERIFY</span></span></a>
+<a class="entry" href="memory.html"><span class="num mono">06</span><span><span class="title">Memory & State</span><span class="sub">The agent forgets; the repo doesn't. Memory layers, state files, and Dreaming.</span></span><span class="chips"><span class="chip">MEMORY</span></span></a>
+<a class="entry" href="parallelism-and-dynamic-workflows.html"><span class="num mono">07</span><span><span class="title">Parallelism, Worktrees & Dynamic Workflows</span><span class="sub">Isolation lanes, multiagent orchestration, and the 750k-line Bun rewrite.</span></span><span class="chips"><span class="chip">SCALE</span></span></a>
+<a class="entry" href="safety-cost-security.html"><span class="num mono">08</span><span><span class="title">Safety, Cost & Security</span><span class="sub">Stop rules, token economics, the MCP attack surface, and harness boundaries.</span></span><span class="chips"><span class="chip">GUARD</span></span></a>
+<a class="entry" href="playbook.html"><span class="num mono">09</span><span><span class="title">The Implementation Playbook</span><span class="sub">Go/no-go test, the nine-step build sequence, anti-patterns, graduation benchmarks.</span></span><span class="chips"><span class="chip">BUILD</span></span></a>
+
+</main>
+<section class="appendix"><article><h2>What&rsquo;s new in this edition (claude.com/blog review, Feb–Jul 2026)</h2>
+<p>This series updates the base &ldquo;Definitive Best-Practices Guide&rdquo; with material published on claude.com/blog in the last five months:</p>
+<ol>
+<li><strong>Routines in Claude Code</strong> (Apr 14, 2026) — <code>/schedule</code> now creates cloud Routines that run on Anthropic infrastructure with your machine off. The &ldquo;trigger&rdquo; building block is officially productized. → File 03</li>
+<li><strong>Agent Harness Design: 3 Patterns</strong> (Apr 2, 2026) — Anthropic&rsquo;s own framing of the loop-around-the-model: use what Claude knows (bash + text editor), strip the harness down (&ldquo;what can I stop doing?&rdquo;), and set boundaries carefully (cache design, declarative tools). Includes hard numbers: code-execution orchestration lifted Opus 4.6 BrowseComp accuracy from 45.3% to 61.6%. → Files 02, 04, 08</li>
+<li><strong>Claude Managed Agents</strong> (Apr 8 → Jun 9, 2026) — the maker/checker and memory patterns are now first-class platform features:
+   - <strong>Outcomes</strong>: a rubric-driven separate grader in its own context window; up to +10 points task success vs. a standard prompting loop. → File 05
+   - <strong>Dreaming</strong> (research preview): a scheduled process that reviews sessions and curates memory between runs — a self-improvement loop on top of your loops. Harvey reported ~6× completion-rate improvement in their tests. → File 06
+   - <strong>Multiagent orchestration</strong>, <strong>webhooks</strong>, <strong>schedules + vaults</strong>, <strong>self-hosted sandboxes and MCP tunnels</strong>. → Files 03, 07, 08</li>
+<li><strong>Dynamic Workflows in Claude Code</strong> (May 28, 2026; now GA) — Claude writes its own orchestration scripts and fans work across tens to hundreds of parallel subagents, with independent verification and adversarial &ldquo;refuter&rdquo; agents before results reach you. Flagship case: Bun ported from Zig to Rust (~750k lines, 11 days, 99.8% of the test suite passing). → File 07</li>
+<li><strong>Choosing a Claude model and effort level in Claude Code</strong> (Jul 7, 2026) — model/effort selection is now a loop-design decision (e.g., cheap fast evaluators, <code>ultracode</code>/xhigh effort for workflow-scale tasks). → Files 05, 07</li>
+<li><strong>Operational evidence</strong> — Anthropic&rsquo;s own large-scale code migrations post (Jul 16), overnight-agent case studies (Cognition Jul 10, Rakuten Jul 20), and the CISO&rsquo;s guide to agentic AI (Jul 17) all reinforce the series&rsquo; verification-first, least-privilege stance. → Files 08, 09</li>
+</ol>
+<h2>Primary sources used across the series</h2>
+<ul>
+<li>Osmani, A. &ldquo;Loop Engineering.&rdquo; June 7, 2026; republished O&rsquo;Reilly Radar June 22, 2026.</li>
+<li>Anthropic, claude.com/blog: Agent Harness Design (Apr 2); Claude Managed Agents series (Apr 8, Apr 23, May 19 ×2, Jun 9); Routines (Apr 14); Dynamic Workflows (May 28); Model &amp; effort levels (Jul 7); AI code migration (Jul 16); CISO guide (Jul 17).</li>
+<li>Anthropic. &ldquo;Building Effective Agents&rdquo;; &ldquo;How we built our multi-agent research system&rdquo;; Claude Code docs (code.claude.com/docs).</li>
+<li>&ldquo;Dive into Claude Code: The Design Space of Today&rsquo;s and Future AI Agent Systems.&rdquo; arXiv:2604.14228, Apr 16, 2026.</li>
+<li>Anthropic. &ldquo;Agent SDK Overview.&rdquo; code.claude.com/docs/en/agent-sdk/overview, Apr 30, 2026.</li>
+<li>Crosley, B. &ldquo;Claude Code CLI: The Complete Guide — Hooks, MCP, Skills.&rdquo; Jun 8, 2026 (v2.1.169).</li>
+<li>AntStack. &ldquo;Claude Agents, Subagents, Agent Teams, Skills &amp; MCP: A Developer&rsquo;s Field Guide.&rdquo; Mar 9, 2026.</li>
+<li>McNamara, C. &ldquo;Understanding Skills, Agents, Subagents, and MCP in Claude Code.&rdquo; Oct 18, 2025.</li>
+<li>Smith Horn Group. &ldquo;Choosing between skills, subagents, and MCP servers in Claude Code.&rdquo; Dec 3, 2025.</li>
+<li>Totalum. &ldquo;Claude Agent SDK in 2026: What It Is, When To Use It.&rdquo; Jun 2026.</li>
+<li>Panickssery, Bowman &amp; Feng. &ldquo;LLM Evaluators Recognize and Favor Their Own Generations.&rdquo; NeurIPS 2024 (Oral).</li>
+</ul>
+<p><em>Version note: Claude Code ships fast. Feature specifics cited here reflect roughly v2.1.139–v2.1.169+ and mid-2026 platform docs. Verify exact flags against current docs before relying on them.</em></p></article></section>
+<footer class="site">LOOP ENGINEERING FIELD MANUAL &middot; SOURCES CURRENT TO JUL 2026 &middot; BUILT FROM /content</footer>
+</body>
+</html>

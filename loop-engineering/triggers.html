@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Triggers & Schedulers — Loop Engineering</title>
+<meta name="description" content="/loop, Routines, scheduled tasks, GitHub Actions, and Managed Agents schedules.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400..700&family=Spline+Sans+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar"><a class="mark" href="index.html"><svg class="loop-glyph" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
+  <g class="rotor"><path d="M12 3a9 9 0 1 0 9 9" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+  <path d="M17.5 1.5 21 3l-1.5 3.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></g>
+</svg><span class="wordmark">Loop Engineering</span></a><span class="crumb">FILE 03 / 09</span><span class="spacer"></span><nav><a href="anatomy-of-a-loop.html">&larr; prev</a> <a href="skills-and-harness-design.html">next &rarr;</a></nav></header><main class="article-wrap"><article>
+<div class="article-head">
+  <div class="file-eyebrow"><span>FILE 03 / 09</span><span class="rule"></span><span class="chips"><span class="chip">TRIGGER</span></span></div>
+  <h1>Triggers & Schedulers</h1>
+</div>
+<h2>TL;DR</h2>
+<ul class="tldr">
+<li>Four trigger tiers, by durability: <strong>in-session</strong> (<code>/loop</code>), <strong>local persistent</strong> (Desktop scheduled tasks), <strong>cloud</strong> (Routines via <code>/schedule</code>), and <strong>infrastructure-native</strong> (GitHub Actions, Agent SDK, Managed Agents schedules).</li>
+<li><strong>New since the base guide:</strong> Routines were formally announced on claude.com/blog (Apr 14, 2026), and Claude Managed Agents gained platform-level schedules plus environment-variable vaults (Jun 9, 2026) — so fully-hosted loops no longer require Claude Code at all.</li>
+<li>Pick the <em>least durable</em> trigger that satisfies the job. Durability you don&rsquo;t need is unattended risk you don&rsquo;t need.</li>
+</ul>
+<h2>The trigger ladder</h2>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Tier</th>
+<th>Mechanism</th>
+<th>Min interval</th>
+<th>Survives laptop closed?</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1. In-session</td>
+<td><code>/loop 15m &lt;prompt or /skill&gt;</code></td>
+<td>interval-based</td>
+<td>No</td>
+<td>Session-scoped: fires only while Claude Code is running and idle; a fresh conversation clears it; no catch-up for missed fires</td>
+</tr>
+<tr>
+<td>2. Local persistent</td>
+<td>Desktop scheduled task</td>
+<td>1 min</td>
+<td>No (machine must be awake)</td>
+<td>v2.1.72+</td>
+</tr>
+<tr>
+<td>3. Cloud</td>
+<td><code>/schedule</code> → <strong>Routine</strong></td>
+<td>1 hour</td>
+<td><strong>Yes</strong></td>
+<td>Runs on Anthropic infra; fresh repo clone each run; pushes to <code>claude/</code>-prefixed branches by default; daily caps by plan (Pro ~5, Max ~15, Team/Enterprise ~25)</td>
+</tr>
+<tr>
+<td>4. Infra-native</td>
+<td>GitHub Actions <code>schedule</code> + <code>anthropics/claude-code-action@v1</code> or headless <code>claude -p</code>; <strong>Managed Agents schedules</strong></td>
+<td>your CI&rsquo;s</td>
+<td>Yes</td>
+<td>Best for CI-coupled loops and org-owned deployments</td>
+</tr>
+</tbody>
+</table></div>
+<h2>Routines (Apr 14, 2026 — now the canonical cloud trigger)</h2>
+<p>The <code>/schedule</code> command in the CLI creates a cloud Routine. Practical implications for loop design:</p>
+<ul>
+<li><strong>Fresh clone each run</strong> → your loop must bootstrap from the repo alone. Anything it needs (skills, memory files, checker agents) must be <em>committed</em>: <code>.claude/skills/</code>, <code>.claude/agents/</code>, CLAUDE.md, progress files.</li>
+<li><strong><code>claude/</code> branch prefix</strong> is a built-in guardrail — keep it. The loop proposes; humans merge.</li>
+<li><strong>Subscription draw-down + per-plan caps</strong> → start daily, observe usage, then increase frequency.</li>
+</ul>
+<h2>Managed Agents schedules + vaults (Jun 9, 2026)</h2>
+<p>For loops that outgrow a repo — cross-system business workflows, agents your team shares — Claude Managed Agents now supports running agents <strong>on a schedule</strong> with secrets stored in <strong>vaults</strong>, plus <strong>webhooks</strong> to notify you when an outcome-gated run completes (May 2026). Combined with self-hosted sandboxes and MCP tunnels (May 19, 2026), this is the &ldquo;tier 4&rdquo; trigger for organizations: the loop lives on the platform, not on anyone&rsquo;s laptop, with Console-level tracing of every step.</p>
+<p><strong>Rule of thumb:</strong> repo-shaped work → Routines; org-shaped work → Managed Agents.</p>
+<h2>The orchestration-skill pattern (author&rsquo;s preferred trigger)</h2>
+<p>A scheduled task or Routine&rsquo;s prompt can invoke a skill or slash command (e.g., <code>/loop /review-pr 1234</code>), so a single <strong>orchestration skill</strong> can carry the goal, completion condition, and verification settings in one versioned artifact. Confirmed viable and recommended: it keeps trigger configuration thin and puts the actual loop logic in git where the checker can see it too.</p>
+<h2>Trigger anti-patterns</h2>
+<ul>
+<li><strong>Don&rsquo;t</strong> use a cloud Routine for something <code>/loop</code> can do while you&rsquo;re at the desk — you lose the ability to watch it in training mode.</li>
+<li><strong>Don&rsquo;t</strong> schedule without idempotency guards (see File 06); a re-fired trigger that re-does completed work is the most common silent cost sink.</li>
+<li><strong>Don&rsquo;t</strong> let a trigger imply permission. The trigger decides <em>when</em>; permissions (<code>/permissions</code>, <code>--allowedTools</code>, vault scoping) decide <em>what</em>.</li>
+</ul>
+<h2>Sources</h2>
+<ul>
+<li>Anthropic, &ldquo;Introducing routines in Claude Code&rdquo; (claude.com/blog, Apr 14, 2026)</li>
+<li>Anthropic, &ldquo;New in Claude Managed Agents: run agents on a schedule and store environment variables in vaults&rdquo; (Jun 9, 2026)</li>
+<li>Anthropic, &ldquo;New in Claude Managed Agents: self-hosted sandboxes and MCP tunnels&rdquo; (May 19, 2026)</li>
+<li>Claude Code docs (code.claude.com/docs); Crosley, complete guide (Jun 2026)</li>
+</ul>
+</article></main><nav class="pager"><a href="anatomy-of-a-loop.html"><span class="dir">&larr; FILE 02</span><span class="ptitle">Anatomy of a Loop</span></a><a class="next" href="skills-and-harness-design.html"><span class="dir">FILE 04 &rarr;</span><span class="ptitle">Skills-First Discipline & Harness Design</span></a></nav>
+<footer class="site">LOOP ENGINEERING FIELD MANUAL &middot; SOURCES CURRENT TO JUL 2026 &middot; BUILT FROM /content</footer>
+</body>
+</html>

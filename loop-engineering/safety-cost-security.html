@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Safety, Cost & Security — Loop Engineering</title>
+<meta name="description" content="Stop rules, token economics, the MCP attack surface, and harness boundaries.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400..700&family=Spline+Sans+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar"><a class="mark" href="index.html"><svg class="loop-glyph" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
+  <g class="rotor"><path d="M12 3a9 9 0 1 0 9 9" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+  <path d="M17.5 1.5 21 3l-1.5 3.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></g>
+</svg><span class="wordmark">Loop Engineering</span></a><span class="crumb">FILE 08 / 09</span><span class="spacer"></span><nav><a href="parallelism-and-dynamic-workflows.html">&larr; prev</a> <a href="playbook.html">next &rarr;</a></nav></header><main class="article-wrap"><article>
+<div class="article-head">
+  <div class="file-eyebrow"><span>FILE 08 / 09</span><span class="rule"></span><span class="chips"><span class="chip">GUARD</span></span></div>
+  <h1>Safety, Cost & Security</h1>
+</div>
+<h2>TL;DR</h2>
+<ul class="tldr">
+<li>The hard part of loop engineering is not autonomy — it&rsquo;s <strong>stop conditions, cost control, and the connector attack surface</strong>.</li>
+<li>Token economics are asymmetric and documented: agents use ~4× chat tokens, multi-agent systems ~15× (Anthropic engineering data); Steinberger&rsquo;s documented extreme was $1,305,088.81 in one month of API spend (~$300K with Fast Mode off). Dynamic workflows carry an explicit &ldquo;substantially more tokens&rdquo; warning from Anthropic itself.</li>
+<li><strong>New since the base guide:</strong> Anthropic&rsquo;s CISO-facing posts (Apr 10 and Jul 17, 2026) reframe the security posture — the goal isn&rsquo;t zero risk, it&rsquo;s risk you&rsquo;ve <em>chosen</em>, bounded, and can observe. Managed Agents&rsquo; self-hosted sandboxes, MCP tunnels, and vaults (May–Jun 2026) are the platform&rsquo;s answer for keeping loops inside your perimeter.</li>
+</ul>
+<h2>Stop rules &amp; termination (non-negotiable)</h2>
+<ul>
+<li>Hard iteration/turn cap in every goal (<code>or stop after N turns</code>) <strong>plus</strong> a wall-clock or dollar ceiling. Runaway loops (an agent hammering a broken tool) are a documented production failure mode.</li>
+<li><code>/goal</code> has <strong>no built-in token budget</strong> — the bound lives in your condition. Interrupt: Ctrl+C or <code>/goal clear</code>.</li>
+<li><strong>Escalate, don&rsquo;t spin:</strong> on a blocker, describe the problem, write it to the triage inbox, exit.</li>
+<li>Dynamic workflows: keep the first-run confirmation on; org admins can disable workflows entirely via managed settings if review bandwidth can&rsquo;t keep up.</li>
+</ul>
+<h2>Cost controls</h2>
+<ul>
+<li>Budget upfront against the 4×/15× multipliers. <code>/cost</code> to monitor; <code>/compact</code> to trim history.</li>
+<li><strong>Idempotency guards</strong> (File 06) prevent the most common silent sink: re-doing completed work each trigger fire.</li>
+<li>Cloud Routines draw down subscription limits with per-plan daily caps — start daily-frequency, scale after observing.</li>
+<li><strong>Model/effort as a cost dial</strong> (Anthropic, Jul 7, 2026): Haiku-class evaluators for frequent binary gates; reserve high effort (<code>ultracode</code>/xhigh) for workflow-scale tasks; don&rsquo;t switch models mid-session (it breaks prompt caches — cached tokens are ~10% the cost of base input). Cache design principles from the harness post: static content first, appended <code>&lt;system-reminder&gt;</code> messages instead of prompt edits, tool-list stability, breakpoint updates.</li>
+<li>Spend subagents only where a second opinion is worth paying for.</li>
+</ul>
+<h2>Security: the connector attack surface</h2>
+<p>2026&rsquo;s documented MCP security crisis — indirect <strong>prompt injection</strong> (malicious instructions hidden in issues, docs, tool output), <strong>over-permissioned connectors</strong> enabling exfiltration, and <strong>supply-chain/tool-poisoning</strong> attacks — makes an unattended loop with write-capable connectors an unattended attack surface. Gravitee&rsquo;s &ldquo;State of AI Agent Security 2026&rdquo; (900+ respondents) found 88% of organizations reporting confirmed or suspected AI-agent security incidents in the past year (92.7% in healthcare).</p>
+<p>Controls, in priority order:</p>
+<ol>
+<li><strong>Least privilege.</strong> Scope connectors minimally; <code>--allowedTools</code> (e.g., read-only <code>Read,Grep,Glob</code>) for analysis loops; enable specific safe bash commands via <code>/permissions</code> rather than <code>--dangerously-skip-permissions</code> (Cherny: never outside a sandbox).</li>
+<li><strong>Treat everything the loop reads as untrusted input</strong> — tickets, PRs, web pages, tool output.</li>
+<li><strong>Keep the <code>claude/</code> branch guardrail on</strong> for Routines; the loop proposes, humans merge.</li>
+<li><strong>Declarative tools at security boundaries</strong> (harness pattern #3): promote hard-to-reverse actions to dedicated, typed, gateable, auditable tools instead of raw bash strings; add staleness checks to write tools; log all tool invocations. Auto-mode&rsquo;s second-Claude command review can reduce the need for dedicated tools — but only for tasks where you trust the general direction.</li>
+<li><strong>Perimeter options for organizations</strong> (Managed Agents, May–Jun 2026): <strong>self-hosted sandboxes</strong> keep execution inside your infrastructure; <strong>MCP tunnels</strong> reach internal systems without exposing them publicly; <strong>vaults</strong> keep secrets out of prompts, memory files, and repos.</li>
+<li><strong>Adopt the CISO framing</strong> (Anthropic, Jul 17, 2026): zero risk isn&rsquo;t the job — enumerate what the loop can touch, bound the blast radius, instrument everything, and make the residual risk an explicit, reviewed decision.</li>
+</ol>
+<h2>Comprehension debt</h2>
+<p>The faster the loop ships code you didn&rsquo;t write, the wider the gap between the codebase and your understanding (Karpathy/Osmani). Anthropic&rsquo;s own large-scale migration write-up (Jul 16, 2026) and the Bun rewrite share the same discipline: massive automation, but every change lands as a reviewable PR. Read what the loop produces. Two people can build the same loop and get opposite results — one moves faster on work they understand; the other stops understanding the work.</p>
+<h2>Sources</h2>
+<ul>
+<li>Anthropic, &ldquo;Zero risk isn&rsquo;t the job: a CISO&rsquo;s guide to agentic AI&rdquo; (Jul 17, 2026); &ldquo;Preparing your security program for AI-accelerated offense&rdquo; (Apr 10, 2026)</li>
+<li>Anthropic, &ldquo;New in Claude Managed Agents: self-hosted sandboxes and MCP tunnels&rdquo; (May 19, 2026); schedules &amp; vaults (Jun 9, 2026)</li>
+<li>Anthropic, &ldquo;Agent Harness Design&rdquo; (Apr 2, 2026) — cache principles, declarative tools, auto-mode</li>
+<li>Anthropic, &ldquo;How Anthropic runs large-scale code migrations with Claude Code&rdquo; (Jul 16, 2026)</li>
+<li>Gravitee, &ldquo;State of AI Agent Security 2026&rdquo;; Tom&rsquo;s Hardware / The Next Web (Steinberger spend, May 2026)</li>
+</ul>
+</article></main><nav class="pager"><a href="parallelism-and-dynamic-workflows.html"><span class="dir">&larr; FILE 07</span><span class="ptitle">Parallelism, Worktrees & Dynamic Workflows</span></a><a class="next" href="playbook.html"><span class="dir">FILE 09 &rarr;</span><span class="ptitle">The Implementation Playbook</span></a></nav>
+<footer class="site">LOOP ENGINEERING FIELD MANUAL &middot; SOURCES CURRENT TO JUL 2026 &middot; BUILT FROM /content</footer>
+</body>
+</html>

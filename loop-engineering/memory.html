@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Memory & State — Loop Engineering</title>
+<meta name="description" content="The agent forgets; the repo doesn't. Memory layers, state files, and Dreaming.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400..700&family=Spline+Sans+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar"><a class="mark" href="index.html"><svg class="loop-glyph" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
+  <g class="rotor"><path d="M12 3a9 9 0 1 0 9 9" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+  <path d="M17.5 1.5 21 3l-1.5 3.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></g>
+</svg><span class="wordmark">Loop Engineering</span></a><span class="crumb">FILE 06 / 09</span><span class="spacer"></span><nav><a href="verification.html">&larr; prev</a> <a href="parallelism-and-dynamic-workflows.html">next &rarr;</a></nav></header><main class="article-wrap"><article>
+<div class="article-head">
+  <div class="file-eyebrow"><span>FILE 06 / 09</span><span class="rule"></span><span class="chips"><span class="chip">MEMORY</span></span></div>
+  <h1>Memory & State</h1>
+</div>
+<h2>TL;DR</h2>
+<ul class="tldr">
+<li><strong>The agent forgets; the repo doesn&rsquo;t</strong> (Osmani). No memory file = no improvement = re-paying for the same issues every run. Memory lives on disk (or Linear/Jira), never in the chat.</li>
+<li>Anthropic ships a layered memory system: CLAUDE.md (conventions), auto-memory/MEMORY.md (learned patterns), the memory tool/folder (agent-chosen persistence), compaction (in-context continuity), and — <strong>new</strong> — <strong>Dreaming</strong> (Managed Agents, research preview): a scheduled process that curates memory <em>between</em> sessions.</li>
+<li>Harness-design evidence says memory investment compounds: the same memory-folder setup that barely helped older models lifted newer ones dramatically (compaction benchmark: 43% flat → 84%).</li>
+</ul>
+<h2>The memory layers, loop by loop</h2>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>What it holds</th>
+<th>Written by</th>
+<th>Loop role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>CLAUDE.md</strong></td>
+<td>Always-true conventions, documented mistakes (~2–3k tokens, git-tracked)</td>
+<td>Humans + team</td>
+<td>Constitution</td>
+</tr>
+<tr>
+<td><strong>Auto-memory / MEMORY.md</strong></td>
+<td>Learned patterns accumulated across sessions</td>
+<td>Claude</td>
+<td>Habits</td>
+</tr>
+<tr>
+<td><strong>progress.md / state file</strong></td>
+<td>What was tried, what passed, what&rsquo;s open, per loop</td>
+<td>The loop, each run</td>
+<td>Working notebook</td>
+</tr>
+<tr>
+<td><strong>Memory tool / folder</strong></td>
+<td>Agent-chosen notes and structured files</td>
+<td>Claude, mid-task</td>
+<td>Long-horizon continuity</td>
+</tr>
+<tr>
+<td><strong>External trackers (Linear/Jira via MCP)</strong></td>
+<td>Cross-team visible state</td>
+<td>Connectors</td>
+<td>Shared ledger</td>
+</tr>
+<tr>
+<td><strong>Dreaming</strong></td>
+<td>Curated, restructured memory distilled from past sessions</td>
+<td>Scheduled platform process</td>
+<td>Self-improvement</td>
+</tr>
+</tbody>
+</table></div>
+<h2>The state file: minimum viable loop memory</h2>
+<p>Anthropic&rsquo;s guidance is disarmingly simple: provide a place to write notes — as simple as a markdown file. The loop reads it at the start of each run and writes what it tried, what passed, and what&rsquo;s still open. Two hard requirements:</p>
+<ol>
+<li><strong>Idempotency guards.</strong> e.g., &ldquo;if a PR labeled <code>claude-sweep</code> already exists this week, exit.&rdquo; Re-runs must not duplicate work — this is the most common silent cost sink.</li>
+<li><strong>Committed, not local.</strong> Cloud Routines start from a fresh clone; memory that isn&rsquo;t in the repo doesn&rsquo;t exist.</li>
+</ol>
+<h2>What good agent memory looks like (harness-design evidence)</h2>
+<p>Anthropic&rsquo;s Pokémon long-horizon example is the clearest illustration of memory quality evolving:</p>
+<ul>
+<li>Sonnet 3.5 treated memory as a transcript — 31 files after 14,000 steps, including near-duplicate trivia notes, still stuck in the second town.</li>
+<li>Opus 4.6 at the same step count: 10 files in organized directories, three gym badges, and a <code>learnings.md</code> distilled from its own failures (tactical rules, confirmed dead-ends, bag-limit workarounds).</li>
+</ul>
+<p><strong>Design your loop&rsquo;s memory format for the second kind:</strong> distilled learnings and confirmed facts, not event logs. Compaction and memory-folder benchmarks (43%→84%; 60.4%→67.2%) show the payoff grows with each model generation — memory is the loop component that appreciates.</p>
+<h2>Dreaming: a loop that improves your loops (May 2026, research preview)</h2>
+<p>Dreaming extends memory with a scheduled review process: it reads past agent sessions and memory stores, extracts patterns a single agent can&rsquo;t see (recurring mistakes, workflows agents converge on, preferences shared across a team), and <strong>restructures memory so it stays high-signal</strong>. Two governance modes: fully automatic, or review-before-changes-land — for unattended production loops, start with review mode.</p>
+<ul>
+<li>Together with memory it forms a two-tempo system: memory captures what each agent learns <em>as it works</em>; dreaming refines it <em>between sessions</em> and pools learnings across agents.</li>
+<li>Field result: <strong>Harvey</strong> (legal AI) reported completion rates up <strong>~6×</strong> in their tests once agents remembered filetype workarounds and tool-specific patterns between sessions.</li>
+<li>Loop-engineering framing: dreaming is a <em>meta-loop</em> — trigger (schedule) + work (pattern extraction) + verification (your review gate) + memory (the memory store itself). The same go/no-go and guardrail discipline applies.</li>
+</ul>
+<h2>Memory anti-patterns</h2>
+<ul>
+<li><strong>Never keep state in the chat.</strong> Context is ephemeral by design; <code>/compact</code> trims it, sessions end.</li>
+<li><strong>Never let memory grow as an append-only log.</strong> Un-curated memory decays into the Sonnet-3.5 Pokémon transcript. Either schedule dreaming/curation or have the loop itself rewrite (not just append) its state file.</li>
+<li><strong>Never store secrets in memory files.</strong> Secrets go in vaults (Managed Agents) or your secret manager — memory files get committed and read broadly.</li>
+</ul>
+<h2>Sources</h2>
+<ul>
+<li>Osmani (Jun 2026)</li>
+<li>Anthropic, &ldquo;Built-in memory for Claude Managed Agents&rdquo; (Apr 23, 2026); &ldquo;New in Claude Managed Agents: dreaming, outcomes, and multiagent orchestration&rdquo; (May 2026)</li>
+<li>Anthropic, &ldquo;Agent Harness Design: 3 Patterns&rdquo; (Apr 2, 2026) — compaction/memory-folder benchmarks and Pokémon example</li>
+<li>Claude memory tool docs; Claude Code docs</li>
+</ul>
+</article></main><nav class="pager"><a href="verification.html"><span class="dir">&larr; FILE 05</span><span class="ptitle">Verification: Maker vs. Checker</span></a><a class="next" href="parallelism-and-dynamic-workflows.html"><span class="dir">FILE 07 &rarr;</span><span class="ptitle">Parallelism, Worktrees & Dynamic Workflows</span></a></nav>
+<footer class="site">LOOP ENGINEERING FIELD MANUAL &middot; SOURCES CURRENT TO JUL 2026 &middot; BUILT FROM /content</footer>
+</body>
+</html>

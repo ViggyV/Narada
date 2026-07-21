@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>What Is Loop Engineering? — Loop Engineering</title>
+<meta name="description" content="The concept, its origin, why it emerged in 2026 — and the corrected attribution.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400..700&family=Spline+Sans+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar"><a class="mark" href="index.html"><svg class="loop-glyph" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
+  <g class="rotor"><path d="M12 3a9 9 0 1 0 9 9" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+  <path d="M17.5 1.5 21 3l-1.5 3.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></g>
+</svg><span class="wordmark">Loop Engineering</span></a><span class="crumb">FILE 01 / 09</span><span class="spacer"></span><nav><a aria-disabled="true">&larr; prev</a> <a href="anatomy-of-a-loop.html">next &rarr;</a></nav></header><main class="article-wrap"><article>
+<div class="article-head">
+  <div class="file-eyebrow"><span>FILE 01 / 09</span><span class="rule"></span><span class="chips"><span class="chip">CONCEPT</span></span></div>
+  <h1>What Is Loop Engineering?</h1>
+</div>
+<h2>TL;DR</h2>
+<ul class="tldr">
+<li>Loop engineering is <strong>replacing yourself as the person who prompts the agent</strong>: you design a system that finds work, executes it, verifies it, records progress, and decides what happens next — then attach it to a trigger.</li>
+<li>The term was named by <strong>Addy Osmani</strong> (Director, Google Cloud AI) in a June 7, 2026 essay, republished by O&rsquo;Reilly Radar on June 22, 2026. It crystallized statements by <strong>Boris Cherny</strong> (head of Claude Code) and <strong>Peter Steinberger</strong> (creator of OpenClaw). <em>Common misattribution to &ldquo;Aditya Agrawal&rdquo; is wrong.</em></li>
+<li>The shift is happening now because the building blocks that used to require custom bash scripts ship inside the products: <code>/goal</code>, <code>/loop</code>, cloud Routines, Skills, subagents with worktree isolation, hooks, MCP — and, since spring 2026, platform-level features like <strong>Outcomes</strong>, <strong>Dreaming</strong>, and <strong>Dynamic Workflows</strong> that productize entire loop patterns.</li>
+</ul>
+<h2>From prompting to loops</h2>
+<p>For roughly two years, the way you got value from a coding agent was: write a good prompt, supply context, read the output, prompt again. <strong>You</strong> were the engine of the loop; the agent was the tool inside it.</p>
+<p>Loop engineering inverts that. The canonical quotes:</p>
+<ul>
+<li><strong>Boris Cherny</strong> (Acquired Unplugged, hosted by WorkOS, June 2, 2026): he no longer prompts Claude directly — he writes the loops that prompt Claude and figure out what to do next.</li>
+<li><strong>Peter Steinberger</strong> (X, June 7–8, 2026, ~6.5M views): stop prompting coding agents; start designing the loops that prompt them.</li>
+<li><strong>Andrej Karpathy</strong> supplies the counterweight: keep AI &ldquo;on the leash&rdquo; — partial autonomy, human in the generation–verification loop, and move the autonomy slider rightward only as fast as your verification can catch what breaks.</li>
+</ul>
+<p>Osmani&rsquo;s key observation: this is <em>not really a tool thing</em>. The same loop shape works in Claude Code and Codex because both expose the same primitives. What changed in 2026 is that the primitives became first-class.</p>
+<h2>The 2026 inflection: loops became product features</h2>
+<p>The base pattern (trigger → work → verify → remember → repeat) used to be something you assembled from cron and shell scripts. As of mid-2026, each stage has a native implementation:</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Loop stage</th>
+<th>Hand-rolled (2024–25)</th>
+<th>Native (2026)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Trigger</td>
+<td>cron + <code>claude -p</code></td>
+<td><code>/loop</code>, Routines (<code>/schedule</code>), Desktop scheduled tasks, Managed Agents schedules</td>
+</tr>
+<tr>
+<td>Execute</td>
+<td>prompt files</td>
+<td>Skills (<code>SKILL.md</code>), slash commands, plugins</td>
+</tr>
+<tr>
+<td>Verify</td>
+<td>eyeball the diff</td>
+<td><code>/goal</code> evaluator, <strong>Outcomes</strong> graders, dynamic-workflow refuter agents</td>
+</tr>
+<tr>
+<td>Remember</td>
+<td>copy-paste context</td>
+<td>CLAUDE.md, auto-memory, memory tool, <strong>Dreaming</strong></td>
+</tr>
+<tr>
+<td>Parallelize</td>
+<td>multiple terminals</td>
+<td><code>--worktree</code>, <code>isolation: worktree</code>, <code>/batch</code>, multiagent orchestration, <strong>Dynamic Workflows</strong></td>
+</tr>
+</tbody>
+</table></div>
+<p>The arXiv survey &ldquo;Dive into Claude Code: The Design Space of Today&rsquo;s and Future AI Agent Systems&rdquo; (2604.14228, Apr 2026) frames the same point academically: the design space of agent systems has consolidated around a small set of composable primitives, and the differentiation has moved to <em>how you compose them</em> — which is exactly what loop engineering is.</p>
+<h2>What loop engineering is NOT</h2>
+<ul>
+<li><strong>Not autonomy for its own sake.</strong> The hard part is verification, stop conditions, and cost control — not getting the agent to run unattended.</li>
+<li><strong>Not a replacement for judgment.</strong> Karpathy&rsquo;s framing holds: if you can&rsquo;t evaluate the output, you can&rsquo;t safely automate producing it.</li>
+<li><strong>Not &ldquo;set and forget.&rdquo;</strong> Every serious practitioner account (Cherny, Osmani, Anthropic&rsquo;s own migration write-ups) keeps a human in the review seat and treats unattended operation as something a loop <em>earns</em>.</li>
+</ul>
+<h2>Attribution corrections (carried forward from the base guide)</h2>
+<ul>
+<li>&ldquo;Loop engineering&rdquo; → <strong>Addy Osmani</strong>, not &ldquo;Aditya Agrawal.&rdquo; (High confidence.)</li>
+<li>&ldquo;The agent forgets, the repo doesn&rsquo;t&rdquo; → also Osmani&rsquo;s line.</li>
+<li>Cherny&rsquo;s exact wording varies across secondary coverage; the substance is verified, the punctuation is approximate.</li>
+</ul>
+<h2>Sources</h2>
+<ul>
+<li>Osmani (Jun 2026); O&rsquo;Reilly Radar republication (Jun 22, 2026)</li>
+<li>Acquired Unplugged / WorkOS conversation with Boris Cherny (Jun 2, 2026)</li>
+<li>arXiv:2604.14228 (Apr 16, 2026)</li>
+<li>Anthropic, &ldquo;Building Effective Agents&rdquo;</li>
+</ul>
+</article></main><nav class="pager"><a class="next" href="anatomy-of-a-loop.html"><span class="dir">FILE 02 &rarr;</span><span class="ptitle">Anatomy of a Loop</span></a></nav>
+<footer class="site">LOOP ENGINEERING FIELD MANUAL &middot; SOURCES CURRENT TO JUL 2026 &middot; BUILT FROM /content</footer>
+</body>
+</html>

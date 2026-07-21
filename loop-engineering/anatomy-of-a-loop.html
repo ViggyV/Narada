@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Anatomy of a Loop — Loop Engineering</title>
+<meta name="description" content="The unified six-component architecture, seen through Anthropic's agent-harness lens.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400..700&family=Spline+Sans+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar"><a class="mark" href="index.html"><svg class="loop-glyph" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
+  <g class="rotor"><path d="M12 3a9 9 0 1 0 9 9" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+  <path d="M17.5 1.5 21 3l-1.5 3.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></g>
+</svg><span class="wordmark">Loop Engineering</span></a><span class="crumb">FILE 02 / 09</span><span class="spacer"></span><nav><a href="what-is-loop-engineering.html">&larr; prev</a> <a href="triggers.html">next &rarr;</a></nav></header><main class="article-wrap"><article>
+<div class="article-head">
+  <div class="file-eyebrow"><span>FILE 02 / 09</span><span class="rule"></span><span class="chips"><span class="chip">TRIGGER</span><span class="chip">WORK</span><span class="chip">VERIFY</span><span class="chip">MEMORY</span></span></div>
+  <h1>Anatomy of a Loop</h1>
+</div>
+<h2>TL;DR</h2>
+<ul class="tldr">
+<li>A production loop has six components: <strong>Trigger + Isolation lanes + Skills + Goal/verification (separate checker) + Persistent memory + Connectors</strong> — governed by a four-condition go/no-go test and a training-mode ramp-up.</li>
+<li>Anthropic&rsquo;s April 2026 &ldquo;Agent Harness Design&rdquo; post gives the official vocabulary for what wraps the model: <em>an agent harness is the loop, tools, context management, and guardrails around raw intelligence.</em> Loop engineering is harness design at the workflow level.</li>
+<li>Every component maps to a verified primitive in Claude Code or the Claude Platform as of mid-2026.</li>
+</ul>
+<h2>The unified six-component model</h2>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Role</th>
+<th>Verified primitives (mid-2026)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Trigger / heartbeat</strong></td>
+<td>When does the loop wake up?</td>
+<td><code>/loop</code> (session-scoped), cloud <strong>Routines</strong> via <code>/schedule</code>, Desktop scheduled tasks, hooks, GitHub Actions, Managed Agents schedules</td>
+</tr>
+<tr>
+<td><strong>Isolation lanes</strong></td>
+<td>Where does each unit of work run?</td>
+<td><code>git worktree</code>, <code>--worktree</code>, <code>isolation: worktree</code> on subagents, <code>/batch</code>, Managed Agents sandboxes</td>
+</tr>
+<tr>
+<td><strong>Execution skills</strong></td>
+<td>The playbook — how the work gets done</td>
+<td><code>SKILL.md</code> in <code>.claude/skills/</code> (progressive disclosure), slash commands</td>
+</tr>
+<tr>
+<td><strong>Goal + verification</strong></td>
+<td>The finish line and the <em>separate</em> checker</td>
+<td><code>/goal</code> (separate evaluator model), checker subagents, <strong>Outcomes</strong> graders, dynamic-workflow refuters</td>
+</tr>
+<tr>
+<td><strong>Output + memory</strong></td>
+<td>The notebook — what persists between runs</td>
+<td>CLAUDE.md, MEMORY.md/auto-memory, memory tool, progress files, <strong>Dreaming</strong>, Linear/Jira via MCP</td>
+</tr>
+<tr>
+<td><strong>Connectors / hands</strong></td>
+<td>How the loop touches real systems</td>
+<td>MCP servers, plugins, MCP tunnels (Managed Agents)</td>
+</tr>
+</tbody>
+</table></div>
+<p>The four durable invariants — the parts <em>any</em> loop needs regardless of tool — are trigger, skills/playbook, goal-verification/maker-checker, and output-memory/notebook. Isolation and connectors become essential once loops go multi-agent or need to act on real systems.</p>
+<h2>The harness lens (new: Anthropic, Apr 2, 2026)</h2>
+<p>Anthropic&rsquo;s &ldquo;Agent Harness Design: 3 Patterns&rdquo; post reframes the same architecture from the model&rsquo;s perspective, with a principle that should govern every loop you build:</p>
+<blockquote>
+<p>Harnesses encode assumptions about what the model <em>can&rsquo;t</em> do — and those assumptions grow stale as the model improves.</p>
+</blockquote>
+<p>The three patterns, applied to loops:</p>
+<ol>
+<li><strong>Use what Claude already knows.</strong> Claude Code is grounded in the bash tool and text editor tool; Skills, programmatic tool calling, and the memory tool are all <em>compositions</em> of those two. Prefer general tools the model deeply understands over bespoke scaffolding.</li>
+<li><strong>Strip the harness down — ask &ldquo;what can I stop doing?&rdquo;</strong> Let Claude orchestrate its own actions via code execution (filtering its own tool outputs lifted Opus 4.6 from 45.3% to 61.6% on BrowseComp), assemble its own context via skills&rsquo; progressive disclosure, and persist its own context via compaction and memory folders. Anthropic&rsquo;s own example: context resets they built for Sonnet 4.5&rsquo;s &ldquo;context anxiety&rdquo; became dead weight by Opus 4.5.</li>
+<li><strong>Set boundaries carefully.</strong> Some structure must stay in the harness: cache-friendly context ordering (static first, dynamic last; don&rsquo;t switch models mid-session), and <em>declarative tools</em> for actions that need a security boundary, UX surface, or audit trail. Hard-to-reverse actions get dedicated, gateable tools — not a raw bash string.</li>
+</ol>
+<p><strong>Loop-engineering translation:</strong> your loop&rsquo;s scaffolding should shrink over time as models improve; your loop&rsquo;s <em>boundaries</em> (verification, permissions, audit) should not.</p>
+<h2>The canonical worked loop</h2>
+<p>Identical in shape across Osmani&rsquo;s essay and both source transcripts, and now mirrored almost exactly by Anthropic&rsquo;s Dynamic Workflows product:</p>
+<ol>
+<li>Morning trigger fires (Routine / scheduled task).</li>
+<li>Loop reads CI failures, open issues, and recent commits into a memory file.</li>
+<li>Opens an isolated worktree per problem.</li>
+<li>A <strong>maker</strong> subagent drafts the fix using battle-tested skills.</li>
+<li>A fresh <strong>checker</strong> subagent (different instructions, ideally different model) tears it apart against the skills and existing tests.</li>
+<li>Connectors open the PR and update the Jira/Linear ticket.</li>
+<li>Anything unhandled lands in a <strong>triage inbox</strong> for the human — escalate, don&rsquo;t spin.</li>
+</ol>
+<h2>Choosing between skills, subagents, and MCP</h2>
+<p>A recurring practitioner question (covered by Smith Horn Group, McNamara, and AntStack&rsquo;s field guide) with a clean answer:</p>
+<ul>
+<li><strong>Skill</strong> = knowledge/procedure the <em>same</em> agent should follow → playbook.</li>
+<li><strong>Subagent</strong> = work that deserves a <em>fresh context window</em> and possibly a different model → isolation + unbiased checking.</li>
+<li><strong>MCP connector</strong> = capability to touch an <em>external system</em> → hands (and attack surface — see File 08).</li>
+<li><strong>Agent SDK / Managed Agents</strong> = when the loop needs to live <em>outside</em> your terminal as a deployed service with schedules, vaults, webhooks, and tracing.</li>
+</ul>
+<h2>Sources</h2>
+<ul>
+<li>Anthropic, &ldquo;Agent Harness Design: 3 Patterns&rdquo; (claude.com/blog, Apr 2, 2026)</li>
+<li>Anthropic, &ldquo;Building Effective Agents&rdquo;; Claude Code docs</li>
+<li>Smith Horn Group (Dec 2025); McNamara (Oct 2025); AntStack field guide (Mar 2026); Agent SDK Overview (Apr 2026)</li>
+<li>Osmani (Jun 2026)</li>
+</ul>
+</article></main><nav class="pager"><a href="what-is-loop-engineering.html"><span class="dir">&larr; FILE 01</span><span class="ptitle">What Is Loop Engineering?</span></a><a class="next" href="triggers.html"><span class="dir">FILE 03 &rarr;</span><span class="ptitle">Triggers & Schedulers</span></a></nav>
+<footer class="site">LOOP ENGINEERING FIELD MANUAL &middot; SOURCES CURRENT TO JUL 2026 &middot; BUILT FROM /content</footer>
+</body>
+</html>
