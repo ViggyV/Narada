@@ -1,0 +1,15 @@
+# macOS
+.DS_Store
+
+# Claude Code local settings (personal, not shared)
+.claude/settings.local.json
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+
+# Third-party data exports — keep local, do not commit.
+data/raw/
