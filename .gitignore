@@ -13,3 +13,6 @@ venv/
 
 # Third-party data exports — keep local, do not commit.
 data/raw/
+
+# Assembled Pages bundle (built in CI)
+_site/

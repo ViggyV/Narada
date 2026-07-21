@@ -17,7 +17,6 @@ log = logging.getLogger(__name__)
 # Each track maps to a list of (source_name, feed_url)
 FEEDS: dict[str, list[tuple[str, str]]] = {
     "AI News": [
-        ("Anthropic News", "https://www.anthropic.com/rss.xml"),
         ("Google AI Blog", "https://blog.google/technology/ai/rss/"),
         ("Hacker News: AI", "https://hnrss.org/newest?q=AI&points=100"),
         ("MIT Tech Review AI", "https://www.technologyreview.com/topic/artificial-intelligence/feed"),
@@ -34,7 +33,6 @@ FEEDS: dict[str, list[tuple[str, str]]] = {
         ("HN: AI coding agents", "https://hnrss.org/newest?q=coding+agent&points=50"),
         ("HN: software factory", "https://hnrss.org/newest?q=%22software+factory%22"),
         ("GitHub Blog", "https://github.blog/feed/"),
-        ("Anthropic Engineering", "https://www.anthropic.com/rss.xml"),
     ],
 }
 

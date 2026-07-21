@@ -54,8 +54,6 @@ def _items_block(items: list[Item]) -> str:
 
 # Hand-tuned: editorial sources carry more signal per item than firehoses.
 SOURCE_WEIGHT: dict[str, float] = {
-    "Anthropic News": 3.0,
-    "Anthropic Engineering": 3.0,
     "Martin Fowler": 3.0,
     "Pragmatic Engineer": 2.5,
     "MIT Tech Review AI": 2.5,
@@ -86,12 +84,28 @@ CLUSTER_THRESHOLD = 0.6  # Jaccard overlap above which two titles are one story
 
 
 def _tokens(title: str) -> frozenset[str]:
+    """Significant words in a title, for overlap comparison.
+
+    Short words are dropped as noise — except digits. A version number is
+    often the *only* thing distinguishing two announcements ("Postgres 17
+    Released" vs "Postgres 18 Released"), and dropping it merges them into
+    one story.
+    """
     words = re.findall(r"[a-z0-9]+", title.lower())
-    return frozenset(w for w in words if w not in STOPWORDS and len(w) > 2)
+    return frozenset(
+        w for w in words if w not in STOPWORDS and (len(w) > 2 or w.isdigit())
+    )
 
 
 def _same_story(a: frozenset[str], b: frozenset[str]) -> bool:
     if not a or not b:
+        return False
+    # Two announcements differing only by a version number overlap heavily
+    # enough to clear the threshold on wording alone, so treat a differing
+    # number as decisive: "Postgres 17 Released" is not "Postgres 18 Released".
+    digits_a = {w for w in a if w.isdigit()}
+    digits_b = {w for w in b if w.isdigit()}
+    if digits_a and digits_b and digits_a != digits_b:
         return False
     return len(a & b) / len(a | b) >= CLUSTER_THRESHOLD
 

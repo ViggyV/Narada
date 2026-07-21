@@ -1,4 +1,6 @@
-feedparser>=6.0
-anthropic>=0.40
-requests>=2.31
-markdown>=3.5
+# Pinned deliberately: this runs unattended on a schedule, so an upstream
+# release must not be able to break the 6 AM job with no change from us.
+anthropic==0.117.0
+feedparser==6.0.12
+Markdown==3.10.2
+requests==2.34.2

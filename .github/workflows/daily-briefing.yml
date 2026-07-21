@@ -24,7 +24,11 @@ jobs:
           python-version: "3.12"
 
       - name: Install dependencies
-        run: pip install -r ai-daily-briefing/requirements.txt
+        run: pip install -r ai-daily-briefing/requirements.txt pytest
+
+      # Fail before touching the published site, not after.
+      - name: Run tests
+        run: python -m pytest ai-daily-briefing/tests -q
 
       - name: Generate briefing
         env:
@@ -35,11 +39,24 @@ jobs:
       - name: Build blog site
         run: python ai-daily-briefing/src/build_site.py
 
+      - name: Build loop-engineering site
+        run: python loop-engineering/build.py
+
+      # The briefing stays at the root so existing URLs keep working; the
+      # guide is mounted beside it rather than replacing anything.
+      - name: Assemble Pages bundle
+        run: |
+          rm -rf _site
+          mkdir -p _site/loop-engineering
+          cp -R ai-daily-briefing/site/. _site/
+          cp loop-engineering/*.html loop-engineering/style.css _site/loop-engineering/
+          find _site -name '*.html' | sort
+
       - name: Commit briefing and site
         run: |
           git config user.name "narada-bot"
           git config user.email "actions@users.noreply.github.com"
-          git add ai-daily-briefing/briefings ai-daily-briefing/site
+          git add ai-daily-briefing/briefings ai-daily-briefing/site loop-engineering
           if git diff --cached --quiet; then
             echo "Nothing to commit."
           else
@@ -50,7 +67,7 @@ jobs:
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v5
         with:
-          path: ai-daily-briefing/site
+          path: _site
 
   deploy:
     needs: briefing
