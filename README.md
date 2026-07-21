@@ -7,7 +7,7 @@ share no code and can be worked on separately.
 
 | Path | What it is |
 | --- | --- |
-| [`ai-daily-briefing/`](ai-daily-briefing/) | Python pipeline that fetches AI news sources, synthesizes a briefing with Claude, and publishes a static blog. Runs daily at 6:00 AM Chicago via GitHub Actions. |
+| [`ai-daily-briefing/`](ai-daily-briefing/) | Python pipeline that fetches AI news sources, ranks them into a briefing, and publishes a static blog — live at **[viggyv.github.io/Narada](https://viggyv.github.io/Narada/)**. Runs daily at 6:00 AM Chicago via GitHub Actions. |
 | [`loop-engineering/`](loop-engineering/) | Nine-chapter written guide on loop engineering, plus `build.py` which renders the markdown in `content/` into the static HTML site. |
 | [`files/`](files/) | Standalone reference material: the software-factory blog post and playbook archive. |
 
@@ -21,15 +21,24 @@ To run it locally:
 
 ```bash
 pip install -r ai-daily-briefing/requirements.txt
-ANTHROPIC_API_KEY=... FORCE_RUN=1 python ai-daily-briefing/src/main.py
+FORCE_RUN=1 python ai-daily-briefing/src/main.py
 python ai-daily-briefing/src/build_site.py
 open ai-daily-briefing/site/index.html
 ```
 
-Repository setup the workflow depends on:
+### Synthesis is optional
 
-- Add `ANTHROPIC_API_KEY` as a repository secret.
-- Set Pages source to **GitHub Actions**.
+With no `ANTHROPIC_API_KEY` set, `synthesize.py` ranks the day's items itself —
+source weight, cross-source pickup, recency, and release-signal keywords — and
+clusters near-identical titles so a story repeated across feeds counts once.
+No key, no API call, and the scheduled run still produces a real shortlist.
+
+Set the key (locally, or as a repository secret) to have Claude write the
+synthesis instead:
+
+```bash
+ANTHROPIC_API_KEY=... FORCE_RUN=1 python ai-daily-briefing/src/main.py
+```
 
 ## loop-engineering
 
