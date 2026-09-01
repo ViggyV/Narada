@@ -2,5 +2,5 @@
 # release must not be able to break the 6 AM job with no change from us.
 anthropic==0.117.0
 feedparser==6.0.12
-Markdown==3.10.2
+Markdown==3.10.3
 requests==2.34.2
